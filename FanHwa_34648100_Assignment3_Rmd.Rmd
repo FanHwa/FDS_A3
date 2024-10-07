@@ -1,0 +1,500 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.16.4
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+---
+
+## FIT5145: Foundations of Data Science Assignments 3: Business and Data Case Study
+
+
+Student Name: Tan Fan Hwa
+
+Student ID: 34648100
+
+
+
+
+
+### 2.0 Load Library
+
+```{r vscode={'languageId': 'r'}}
+# Read Excel File
+library(knitr)
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(naniar)
+library(reshape2)
+library(caret)
+library(readxl)
+```
+
+### 3.0 Reading the Data and Preprocessing
+
+```{r vscode={'languageId': 'r'}}
+file_path = "Claims-statistical-report-calendar-year-2024-06.xlsx"
+
+# List all sheets in the Excel file
+sheet_names <- excel_sheets(file_path)
+print(sheet_names)
+```
+
+#### 3.1 Industry Division Data
+
+```{r vscode={'languageId': 'r'}}
+# Read Industry division sheet
+industry_division_df <- read_excel(file_path, sheet = "Industry division", skip = 10)
+
+industry_division_df <- industry_division_df[, 1:14]
+
+# Rename columns to proper names (as shown in the screenshot)
+colnames(industry_division_df) <- c("industry_division", "2011", "2012", "2013", 
+                               "2014", "2015", "2016", "2017", "2018", "2019", 
+                               "2020", "2021", "2022", "2023")
+
+# Convert column 2 to 14 as numeric
+industry_division_df[, 2:14] <- sapply(industry_division_df[, 2:14], as.numeric)
+
+# Remove the first letter in the data in the industry_division column which serves as a tag
+industry_division_df$industry_division <- sub("^\\w\\s+", "", industry_division_df$industry_division)
+
+# Drop any rows with all NA values
+industry_division_df <- industry_division_df[complete.cases(industry_division_df), ]
+
+industry_division_df
+```
+
+The `total` row will be removed from the data as it don't represent individual observations or unique categories. Including them in analysis (especially visualizations or correlations) can lead to misleading insights.
+
+```{r vscode={'languageId': 'r'}}
+# remove `total` row
+industry_division_df <- industry_division_df[-nrow(industry_division_df), ]
+
+industry_division_df
+```
+
+<!-- #region vscode={"languageId": "r"} -->
+We will drop out the `Other Services` row as it is not representing any individual industry and cannot contribute to the analysis.
+<!-- #endregion -->
+
+```{r vscode={'languageId': 'r'}}
+# Drop Other Services row
+industry_division_df <- industry_division_df[-which(industry_division_df$industry_division == "Other Services"), ]
+
+industry_division_df
+```
+
+#### 3.2 Bodily Location Data
+
+```{r vscode={'languageId': 'r'}}
+# Read Bodily location sheet
+bodily_location_df <- read_excel(file_path, sheet = "Bodily location", skip = 3)
+
+bodily_location_df <- bodily_location_df[, 1:14]
+
+# Rename columns to proper names (as shown in the screenshot)
+colnames(bodily_location_df) <- c("bodily_location", "2011", "2012", "2013", 
+                               "2014", "2015", "2016", "2017", "2018", "2019", 
+                               "2020", "2021", "2022", "2023")
+
+# Convert column 2 to 14 as numeric
+bodily_location_df[, 2:14] <- sapply(bodily_location_df[, 2:14], as.numeric)
+
+# Drop any rows with all NA values
+bodily_location_df <- bodily_location_df[complete.cases(bodily_location_df), ]
+
+# Remove leading numbers from the bodily_location column
+bodily_location_df$bodily_location <- sub("^\\d+\\s+", "", bodily_location_df$bodily_location)
+
+# Drop rows with `total` in the bodily_location column
+bodily_location_df <- bodily_location_df[!grepl("Total", bodily_location_df$bodily_location, ignore.case = TRUE), ]
+
+bodily_location_df
+```
+
+We will drop out the `Unspecified Location` row as it is not representing any individual location and cannot contribute to the analysis.
+
+```{r vscode={'languageId': 'r'}}
+# Drop rows with `Unspecified Location` in the bodily_location column
+bodily_location_df <- bodily_location_df[!grepl("Unspecified Location", bodily_location_df$bodily_location, ignore.case = TRUE), ]
+
+bodily_location_df
+```
+
+#### 3.3 Agency of Injury
+
+```{r vscode={'languageId': 'r'}}
+# Read Agency of injury data
+agency_of_injury_df <- read_excel(file_path, sheet = "Agency of injury", skip = 10)
+
+agency_of_injury_df <- agency_of_injury_df[, 1:15]
+
+# Rename columns to proper names
+colnames(agency_of_injury_df) <- c("agency_of_injury_type","agency_of_injury", "2011", "2012", "2013", 
+                               "2014", "2015", "2016", "2017", "2018", "2019", 
+                               "2020", "2021", "2022", "2023")
+
+agency_of_injury_df <- agency_of_injury_df %>% fill(agency_of_injury_type, .direction = "down")
+
+# Remove the first digit and any following space in the 'agency_of_injury_type' column
+agency_of_injury_df$agency_of_injury_type <- sub("^\\d+\\s+", "", agency_of_injury_df$agency_of_injury_type)
+
+# Remove the first digit and any following space in the 'agency_of_injury' column
+agency_of_injury_df$agency_of_injury <- sub("^\\d+\\s+", "", agency_of_injury_df$agency_of_injury)
+
+# Reorder the columns to swap positions
+agency_of_injury_df <- agency_of_injury_df %>%
+  select(agency_of_injury, agency_of_injury_type, everything())
+
+# Remove rows where 'agency_of_injury' is "Agency group total"
+agency_of_injury_df <- agency_of_injury_df[agency_of_injury_df$agency_of_injury != "Agency group total", ]
+
+# Drop any rows with all NA values
+agency_of_injury_df <- agency_of_injury_df[complete.cases(agency_of_injury_df), ]
+
+agency_of_injury_df
+```
+
+We will drop out the `agency_of_injury_type` with `Other And Unspecified Agencies` as it is not representing any individual agency and cannot contribute to the analysis.
+
+```{r vscode={'languageId': 'r'}}
+# drop rows with `Other And Unspecified Agencies` in `agency_of_injury_type` column
+agency_of_injury_df <- agency_of_injury_df[!grepl("Other And Unspecified Agencies", agency_of_injury_df$agency_of_injury_type, ignore.case = TRUE), ]
+
+agency_of_injury_df
+```
+
+### Correlation Analysis between Industry Division and Agency of Injury
+
+```{r vscode={'languageId': 'r'}}
+# Step 1: Create an empty dataframe to store the correlation results
+industry_agency_correlation_df <- data.frame(agency_of_injury = agency_of_injury_df$agency_of_injury)
+
+# Step 2: Loop through each industry division and calculate correlations
+for (i in 1:nrow(industry_division_df)) {
+  # Extract industry division name and data
+  industry_division <- industry_division_df$industry_division[i]
+  industry_data <- industry_division_df[i, -1]  # Skip the industry division name
+  
+  # Step 3: Get the year columns from both datasets
+  colnames_industry <- colnames(industry_data)
+  colnames_agency <- colnames(agency_of_injury_df[, -1])  # Skip the first column
+
+  # Step 4: Align the columns by matching year ranges
+  common_years <- intersect(colnames_industry, colnames_agency)
+  
+  # Subset both datasets to include only the common years
+  industry_data_aligned <- industry_data[, common_years, drop = FALSE]
+  agency_data_aligned <- agency_of_injury_df[, c("agency_of_injury", common_years), drop = FALSE]
+  
+  # Step 5: Transpose the industry data into a numeric vector
+  industry_data_t <- as.numeric(unlist(industry_data_aligned))
+  
+  # Step 6: Calculate correlations for each agency_of_injury
+  correlations <- apply(agency_data_aligned[, -1, drop = FALSE], 1, function(x) {
+    cor(as.numeric(x), industry_data_t, use = "complete.obs")
+  })
+  
+  # Step 7: Add the correlations to the dataframe, using the industry division name as the column name
+  industry_agency_correlation_df[[industry_division]] <- correlations
+}
+
+# Step 8: View the final correlation dataframe
+head(industry_agency_correlation_df)
+
+```
+
+As the dataset is large for the correlation analysis, we will select a subset of the data to perform the analysis. The subset will be selected based on the top 10 corelation values between the Industry Division and Agency of Injury.
+
+```{r vscode={'languageId': 'r'}}
+# Filter out top 10 data with largest correlation score
+top_10_correlation <- industry_agency_correlation_df %>%
+  gather(key = "industry_division", value = "correlation", -agency_of_injury) %>%
+  group_by(industry_division) %>%
+  top_n(10, correlation) %>%
+  arrange(desc(correlation))
+
+head(top_10_correlation)
+```
+
+```{r vscode={'languageId': 'r'}}
+# Step 1: Initialize an empty list to store the plot data for each iteration
+plot_data_list <- list()
+
+# Step 2: Loop through top 5 correlations and collect data
+for (i in 1:12) {
+    industry_division <- top_10_correlation$industry_division[i]
+    agency_of_injury <- top_10_correlation$agency_of_injury[i]
+    correlation <- top_10_correlation$correlation[i]
+
+    # Extract the industry data for the specific industry division
+    industry_data <- industry_division_df[industry_division_df$industry_division == industry_division, -1]
+
+    # Extract the agency data for the specific agency_of_injury, removing the first two columns
+    agency_data <- agency_of_injury_df[agency_of_injury_df$agency_of_injury == agency_of_injury, -(1:2)]
+
+    # Create a data frame for each combination
+    years <- 2011:2023
+    plot_data <- data.frame(
+        Year = years,
+        Industry_Claims = as.numeric(unlist(industry_data)),
+        Agency_Claims = as.numeric(unlist(agency_data)),
+        Industry_Division = industry_division,
+        Agency_of_Injury = agency_of_injury
+    )
+
+    # Store the plot data for this iteration in the list
+    plot_data_list[[i]] <- plot_data
+}
+
+# Step 3: Combine all the collected plot data into a single dataframe
+final_plot_data <- do.call(rbind, plot_data_list)
+
+print(final_plot_data)
+```
+
+```{r vscode={'languageId': 'r'}}
+# {r, fig.width=12, fig.height=12}
+custom_labeller <- labeller(
+    Industry_Division = function(x) str_wrap(x, width = 20),  # Wrap industry names
+    Agency_of_Injury = function(x) str_wrap(x, width = 20)    # Wrap agency names
+)
+
+# Create the ggplot with text wrapping in facet labels
+ggplot(data = final_plot_data, aes(x = Year)) +
+    geom_line(aes(y = Industry_Claims, color = "Industry Claims"), size = 1.2) +
+    geom_point(aes(y = Industry_Claims, color = "Industry Claims")) +
+    geom_line(aes(y = Agency_Claims, color = "Agency Claims"), size = 1.2) +
+    geom_point(aes(y = Agency_Claims, color = "Agency Claims")) +
+    facet_wrap(~ Industry_Division + Agency_of_Injury, scales = "free_y", labeller = custom_labeller) +  # Apply custom labeller
+    labs(
+        title = "Claims over the years for Industry Divisions and Agencies of Injury",
+        x = "Year",
+        y = "Number of Claims"
+    ) +
+    scale_color_manual(name = "Claims", values = c("Industry Claims" = "blue", "Agency Claims" = "red")) +
+    theme_minimal() +
+    theme(
+        plot.title = element_text(size = 14),      # Increase title size
+        axis.title = element_text(size = 12),      # Increase axis titles
+        axis.text = element_text(size = 10),       # Increase axis text
+        strip.text = element_text(size = 12),      # Increase facet label size
+        legend.title = element_text(size = 10),    # Increase legend title size
+        legend.text = element_text(size = 9)       # Increase legend text size
+    ) +
+    theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))  # Add margins around the plot for better spacing
+```
+
+From the plotting, we can observe some combinations of Industry Division and Agency of Injury that have a very similar plot pattern. We will select one of the combination to perform further analysis.
+
+We will select the combination of `Public Admisnistration and Safety` and `Indoor Environment` for further analysis.
+
+```{r vscode={'languageId': 'r'}}
+# Create a subset of the final plot data for the specific industry division and agency of injury
+subset_plot_data <- final_plot_data %>%
+    filter(Industry_Division %in% c("Public Administration and Safety", "Indoor Environment"),
+           Agency_of_Injury %in% c("Public Administration and Safety", "Indoor Environment"))
+
+# Function to calculate the R-squared value for a linear model
+calculate_r_squared <- function(x, y) {
+    model <- lm(y ~ x)
+    summary(model)$r.squared
+}
+
+# Calculate R-squared values for Industry Claims
+industry_r_squared <- calculate_r_squared(subset_plot_data$Year, subset_plot_data$Industry_Claims)
+
+# Calculate R-squared values for Agency Claims
+agency_r_squared <- calculate_r_squared(subset_plot_data$Year, subset_plot_data$Agency_Claims)
+
+# Create the ggplot with text wrapping in facet labels and linear regression lines
+ggplot(data = subset_plot_data, aes(x = Year)) +
+    geom_line(aes(y = Industry_Claims, color = "Industry Claims"), size = 1.2) +
+    geom_point(aes(y = Industry_Claims, color = "Industry Claims")) +
+    geom_smooth(aes(y = Industry_Claims, color = "Industry Claims"), method = "lm", linetype = "dashed", se = FALSE) +  # Add linear regression line for Industry Claims
+    geom_line(aes(y = Agency_Claims, color = "Agency Claims"), size = 1.2) +
+    geom_point(aes(y = Agency_Claims, color = "Agency Claims")) +
+    geom_smooth(aes(y = Agency_Claims, color = "Agency Claims"), method = "lm", linetype = "dashed", se = FALSE) +  # Add linear regression line for Agency Claims
+    facet_wrap(~ Industry_Division + Agency_of_Injury, scales = "free_y") +  
+    labs(
+        title = "Claims over the years for Industry Divisions and Agencies of Injury",
+        x = "Year",
+        y = "Number of Claims"
+    ) +
+    # Annotate the R-squared values on the plot
+    annotate("text", x = 2015, y = max(subset_plot_data$Industry_Claims, na.rm = TRUE) * 0.9, 
+             label = paste("R² for Industry Claims:", round(industry_r_squared, 2)), color = "blue", size = 3) +
+    annotate("text", x = 2015, y = max(subset_plot_data$Agency_Claims, na.rm = TRUE) * 0.8, 
+             label = paste("R² for Agency Claims:", round(agency_r_squared, 2)), color = "red", size = 3) +
+    scale_color_manual(name = "Claims", values = c("Industry Claims" = "blue", "Agency Claims" = "red")) +
+    theme_minimal() +
+    theme(
+        plot.title = element_text(size = 14),      # Increase title size
+        axis.title = element_text(size = 12),      # Increase axis titles
+        axis.text = element_text(size = 10),       # Increase axis text
+        strip.text = element_text(size = 12),      # Increase facet label size
+        legend.title = element_text(size = 10),    # Increase legend title size
+        legend.text = element_text(size = 9)       # Increase legend text size
+    ) +
+    theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))  # Add margins around the plot for better spacing
+
+```
+
+The `Public Administration and Safety` sector has an R-squared value of 0.73, while the `Indoor Environment` agency has an R-squared value of 0.6. These relatively close R-squared values suggest that both datasets have a moderately strong linear trend, although the fit for the `Public Administration and Safety` sector is slightly better.
+
+The similar patterns observed in the plot imply that workers in the `Public Administration and Safety` industry are indeed more likely to experience injuries in the `Indoor Environment` agency compared to other environments.
+
+```{r vscode={'languageId': 'r'}}
+
+```
+
+```{r vscode={'languageId': 'r'}}
+
+```
+
+```{r vscode={'languageId': 'r'}}
+
+```
+
+```{r vscode={'languageId': 'r'}}
+
+```
+
+```{r vscode={'languageId': 'r'}}
+
+```
+
+### Correlation Analysis between Industry Division and Bodily Location
+
+```{r vscode={'languageId': 'r'}}
+# Create an empty dataframe to store the correlation results
+industry_bodily_location_correlation_df <- data.frame(bodily_location = bodily_location_df$bodily_location)
+
+# Loop through each industry division and calculate correlations
+for (i in 1:nrow(industry_division_df)) {
+    # Extract industry division name and data
+    industry_division <- industry_division_df$industry_division[i]
+    industry_data <- industry_division_df[i, -1] # Skip the industry division name
+
+    # Get the year columns from both datasets
+    colnames_industry <- colnames(industry_data)
+    colnames_bodily_location <- colnames(bodily_location_df[, -1]) # Skip the first column
+
+    # Align the columns by matching year ranges
+    common_years <- intersect(colnames_industry, colnames_bodily_location)
+
+    # Subset both datasets to include only the common years
+    industry_data_aligned <- industry_data[, common_years, drop = FALSE]
+    bodily_location_data_aligned <- bodily_location_df[, c("bodily_location", common_years), drop = FALSE]
+
+    # Transpose the industry data into a numeric vector
+    industry_data_t <- as.numeric(unlist(industry_data_aligned))
+
+    # Calculate correlations for each bodily_location
+    correlations <- apply(bodily_location_data_aligned[, -1, drop = FALSE], 1, function(x) {
+        cor(as.numeric(x), industry_data_t, use = "complete.obs")
+    })
+
+    # Add the correlations to the dataframe, using the industry division name as the column name
+    industry_bodily_location_correlation_df[[industry_division]] <- correlations
+}
+
+# View the final correlation dataframe
+head(industry_bodily_location_correlation_df)
+
+```
+
+```{r vscode={'languageId': 'r'}}
+# Filter out top 10 data with largest correlation score
+top_10_industry_bodily_correlation = industry_bodily_location_correlation_df %>%
+    gather(key = "industry_division", value = "correlation", -bodily_location) %>%
+    group_by(bodily_location) %>%
+    top_n(10, correlation) %>%
+    arrange(desc(correlation))
+
+head(top_10_industry_bodily_correlation)
+```
+
+```{r vscode={'languageId': 'r'}}
+# Initialize an empty list to store the plot data for each iteration
+plot_data_list <- list()
+
+# Loop through top 12 correlations and collect data
+for (i in 1:12) {
+    bodily_location <- top_10_industry_bodily_correlation$bodily_location[i]
+    industry_division <- top_10_industry_bodily_correlation$industry_division[i]
+    correlation <- top_10_industry_bodily_correlation$correlation[i]
+
+    # Extract the industry data for the specific industry division
+    industry_data <- industry_division_df[industry_division_df$industry_division == industry_division, -1]
+
+    # Extract the bodily location data for the specific bodily location, removing the first two columns
+    bodily_location_data <- bodily_location_df[bodily_location_df$bodily_location == bodily_location, -1]
+
+    # Create a data frame for each combination
+    years <- 2011:2023
+    plot_data <- data.frame(
+        Year = years,
+        Industry_Claims = as.numeric(unlist(industry_data)),
+        Bodily_Location_Claims = as.numeric(unlist(bodily_location_data)),
+        Industry_Division = industry_division,
+        Bodily_Location = bodily_location
+    )
+
+    # Store the plot data for this iteration in the list
+    plot_data_list[[i]] <- plot_data
+}
+
+# Combine all the collected plot data into a single dataframe
+final_plot_data <- do.call(rbind, plot_data_list)
+
+print(final_plot_data)
+```
+
+```{r vscode={'languageId': 'r'}}
+# {r, fig.width=12, fig.height=12}
+custom_labeller <- labeller(
+    Industry_Division = function(x) str_wrap(x, width = 20), 
+    Bodily_Location = function(x) str_wrap(x, width = 20) 
+)
+
+
+# Plot the data
+ggplot(data = final_plot_data, aes(x = Year)) +
+    geom_line(aes(y = Industry_Claims, color = "Industry Claims"), size = 1.2) +
+    geom_point(aes(y = Industry_Claims, color = "Industry Claims")) +
+    geom_line(aes(y = Bodily_Location_Claims, color = "Bodily Location Claims"), size = 1.2) +
+    geom_point(aes(y = Bodily_Location_Claims, color = "Bodily Location Claims")) +
+    facet_wrap(~ Industry_Division + Bodily_Location, scales = "free_y", labeller = custom_labeller) +  # Apply custom labeller
+    labs(
+        title = "Claims over the years for Industry Divisions and Bodily Locations",
+        x = "Year",
+        y = "Number of Claims"
+    ) +
+    scale_color_manual(name = "Claims", values = c("Industry Claims" = "blue", "Bodily Location Claims" = "red")) +
+    theme_minimal() +
+    theme(
+        plot.title = element_text(size = 14),      # Increase title size
+        axis.title = element_text(size = 12),      # Increase axis titles
+        axis.text = element_text(size = 10),       # Increase axis text
+        strip.text = element_text(size = 12),      # Increase facet label size
+        legend.title = element_text(size = 10),    # Increase legend title size
+        legend.text = element_text(size = 9)       # Increase legend text size
+    ) +
+    theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))  # Add margins around the plot for better spacing
+```
+
+```{r vscode={'languageId': 'r'}}
+
+```
+
+

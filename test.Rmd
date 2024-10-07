@@ -1,0 +1,74 @@
+---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .Rmd
+      format_name: rmarkdown
+      format_version: '1.2'
+      jupytext_version: 1.16.4
+  kernelspec:
+    display_name: R
+    language: R
+    name: ir
+---
+
+```{r vscode={'languageId': 'r'}}
+# Read Excel File
+library(knitr)
+library(ggplot2)
+library(tidyverse)
+library(naniar)
+library(reshape2)
+library(caret)
+library(readxl)
+```
+
+```{r vscode={'languageId': 'r'}}
+file_path = "Claims-statistical-report-calendar-year-2024-06.xlsx"
+
+# List all sheets in the Excel file
+sheet_names <- excel_sheets(file_path)
+print(sheet_names)
+```
+
+```{r vscode={'languageId': 'r'}}
+# Read Bodily location sheet
+bodily_location <- read_excel(file_path, sheet = "Bodily location", skip = 3)
+
+
+colnames(bodily_location)
+
+bodily_location <- bodily_location[, 1:14]
+
+# Rename columns to proper names (as shown in the screenshot)
+colnames(bodily_location) <- c("Bodily Location", "2011", "2012", "2013", 
+                               "2014", "2015", "2016", "2017", "2018", "2019", 
+                               "2020", "2021", "2022", "2023")
+
+# Drop any rows with all NA values
+bodily_location <- bodily_location[complete.cases(bodily_location), ]
+
+bodily_location
+```
+
+```{r vscode={'languageId': 'r'}}
+# Filter the row for "Eye" injuries
+eye_injury_data <- bodily_location[bodily_location$`Bodily Location` == "12 Eye", ]
+
+# Convert the year columns into numeric values for plotting
+years <- as.numeric(colnames(eye_injury_data)[2:14])
+eye_injuries <- as.numeric(eye_injury_data[1, 2:14])
+
+# Plotting the data
+plot(years, eye_injuries, type = "b", col = "blue", lwd = 2,
+     xlab = "Year", ylab = "Number of Eye Injuries",
+     main = "Eye Injuries from 2011 to 2023",
+     pch = 16)
+
+# Adding grid lines for better readability
+grid()
+```
+
+```{r vscode={'languageId': 'r'}}
+
+```
