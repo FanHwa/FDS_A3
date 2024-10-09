@@ -14,14 +14,9 @@ jupyter:
 
 ## FIT5145: Foundations of Data Science Assignments 3: Business and Data Case Study
 
-
 Student Name: Tan Fan Hwa
 
 Student ID: 34648100
-
-
-
-
 
 ### 2.0 Load Library
 
@@ -83,8 +78,8 @@ industry_division_df
 ```
 
 <!-- #region vscode={"languageId": "r"} -->
-We will drop out the `Other Services` row as it is not representing any individual industry and cannot contribute to the analysis.
-<!-- #endregion -->
+
+We will drop out the `Other Services` row as it is not representing any individual industry and cannot contribute to the analysis. <!-- #endregion -->
 
 ```{r vscode={'languageId': 'r'}}
 # Drop Other Services row
@@ -262,8 +257,7 @@ final_plot_data <- do.call(rbind, plot_data_list)
 print(final_plot_data)
 ```
 
-```{r vscode={'languageId': 'r'}}
-# {r, fig.width=12, fig.height=12}
+```{r, fig.width=12, fig.height=12}
 custom_labeller <- labeller(
     Industry_Division = function(x) str_wrap(x, width = 20),  # Wrap industry names
     Agency_of_Injury = function(x) str_wrap(x, width = 20)    # Wrap agency names
@@ -460,8 +454,7 @@ final_plot_data <- do.call(rbind, plot_data_list)
 print(final_plot_data)
 ```
 
-```{r vscode={'languageId': 'r'}}
-# {r, fig.width=12, fig.height=12}
+```{r, fig.width=12, fig.height=12}
 custom_labeller <- labeller(
     Industry_Division = function(x) str_wrap(x, width = 20), 
     Bodily_Location = function(x) str_wrap(x, width = 20) 
@@ -496,5 +489,3 @@ ggplot(data = final_plot_data, aes(x = Year)) +
 ```{r vscode={'languageId': 'r'}}
 
 ```
-
-
