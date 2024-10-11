@@ -314,10 +314,8 @@ agency_r_squared <- calculate_r_squared(subset_plot_data$Year, subset_plot_data$
 ggplot(data = subset_plot_data, aes(x = Year)) +
     geom_line(aes(y = Industry_Claims, color = "Industry Claims"), size = 1.2) +
     geom_point(aes(y = Industry_Claims, color = "Industry Claims")) +
-    geom_smooth(aes(y = Industry_Claims, color = "Industry Claims"), method = "lm", linetype = "dashed", se = FALSE) +  # Add linear regression line for Industry Claims
     geom_line(aes(y = Agency_Claims, color = "Agency Claims"), size = 1.2) +
     geom_point(aes(y = Agency_Claims, color = "Agency Claims")) +
-    geom_smooth(aes(y = Agency_Claims, color = "Agency Claims"), method = "lm", linetype = "dashed", se = FALSE) +  # Add linear regression line for Agency Claims
     facet_wrap(~ Industry_Division + Agency_of_Injury, scales = "free_y") +  
     labs(
         title = "Claims over the years for Industry Divisions and Agencies of Injury",
