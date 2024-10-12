@@ -20,7 +20,7 @@ Student ID: 34648100
 
 ### 1.0 Introduction
 
-This project is to anaylse a usable dataset from the Australian Government's Safe Work Australia website. The goal for this analysis is to prove the feasilbility of using the dataset to predict the number of injury claims in the future from different factors and provide a customisable insurance plan model based on diffreent customers' characteristics.
+This project is to anaylse a usable dataset from the Australian Government's Safe Work Australia website. The goal for this analysis is to prove the feasilbility of using the dataset to predict the number of injury claims in the future from different factors and provide a customisable insurance plan model based on different customers' characteristics.
 
 ### 2.0 Load Library
 
@@ -85,8 +85,6 @@ industry_division_df <- industry_division_df[-nrow(industry_division_df), ]
 
 industry_division_df
 ```
-
-<!-- #region vscode={"languageId": "r"} -->
 
 We will drop out the `Other Services` row as it is not representing any individual industry and cannot contribute to the analysis. <!-- #endregion -->
 
@@ -198,10 +196,10 @@ average_industry_claims
 # Plot the industries with the highest average number of injury claims
 ggplot(average_industry_claims, aes(x = reorder(industry_division, Average_Claims), y = Average_Claims, fill = Average_Claims)) +
   geom_bar(stat = "identity") +
-  coord_flip() +  # Flip the chart to make it more readable
-  scale_fill_gradient(low = "lightblue", high = "darkblue") +  # Use a color gradient for different bar colors
+  coord_flip() +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
   labs(
-    title = "Average Number of Injury Claims by Industry Division (2011-2023)",
+    title = "Average Number of Injury Claims by Industry Division \n(2011-2023)",
     x = "Industry Division",
     y = "Average Number of Claims"
   ) +
@@ -228,12 +226,12 @@ industry_claims_IQR_value <- industry_claims_Q3 - industry_claims_Q1
 industry_claims_lower_bound <- industry_claims_Q1 - 1.5 * industry_claims_IQR_value
 industry_claims_upper_bound <- industry_claims_Q3 + 1.5 * industry_claims_IQR_value
 
-# Step 4: Identify industries with injury rates below the lower bound (low-risk)
+# Identify industries with injury rates below the lower bound (low-risk)
 selected_industries <- average_industry_claims %>%
     filter(Average_Claims > industry_claims_Q1) %>%
     arrange(Average_Claims)
 
-# Step 5: Store all relevant statistics in a summary table
+# Store all relevant statistics in a summary table
 iqr_summary <- data.frame(
     Statistic = c("Q1 (25th Percentile)", "Q3 (75th Percentile)", "Interquartile Range (IQR)", "Lower Bound", "Upper Bound"),
     Value = c(industry_claims_Q1, industry_claims_Q3, industry_claims_IQR_value, industry_claims_lower_bound, industry_claims_upper_bound)
@@ -347,16 +345,16 @@ main_industry_title <- textGrob(
 # Use grid.arrange to display the plots with the main title
 grid.arrange(
   arrangeGrob(
-    grobs = industry_ggplot_list,  # List of ggplots for bodily locations
-    ncol = 2,                    # Number of columns in the grid
-    top = main_industry_title      # Set the main title for the entire plot
+    grobs = industry_ggplot_list,
+    ncol = 2,
+    top = main_industry_title
   )
 )
 ```
 
-Industries like Health Care and Social Assistance (slope: 134.12) and Construction (slope: 102.55)) show a clear upward trend in the number of injury claims over the years. This indicates that these sectors are experiencing a rise in risk which suggest the insurance premium of customer in these 3 industries should increase.
+Industries like **Health Care and Social Assistance** (slope: 134.12) and **Construction** (slope: 102.55)) show a clear upward trend in the number of injury claims over the years. This indicates that these sectors are experiencing a rise in risk which suggest the insurance premium of customer in these 2 industries should increase.
 
-In contrast, sectors such as Manufacturing (slope: -72.13) and Wholesale Trade (slope: -18.58) exhibit a downward trend, suggesting a reduction in injury claims over time. This suggest a discount can be give to customers in these 3 industries
+In contrast, sectors such as **Manufacturing** (slope: -72.13) and **Wholesale Trade** (slope: -18.58) exhibit a downward trend, suggesting a reduction in injury claims over time. This suggest a discount can be give to customers in these 2 industries
 
 ### 6.0 Time Series Analysis on Bodily Location
 
@@ -376,7 +374,7 @@ for (i in 1:nrow(bodily_location_df)) {
 
   # Fit a linear model to the time series to calculate the slope of the trend
   trend_model <- lm(bodily_data ~ I(2011:2023))
-  slope <- coef(trend_model)[2]  # Extract the slope of the trend
+  slope <- coef(trend_model)[2]
 
   # Determine the trend direction
   trend_direction <- ifelse(slope > 0, "Increasing", "Decreasing")
@@ -425,7 +423,7 @@ main_bodily_title <- textGrob(
   gp = gpar(fontsize = 16, fontface = "bold")
 )
 
-# Use grid.arrange to display the plots with the main title
+# Display the plots with the main title
 grid.arrange(
   arrangeGrob(
     grobs = bodily_ggplot_list,
@@ -449,11 +447,11 @@ industry_agency_correlation_df <- data.frame(agency_of_injury = agency_of_injury
 for (i in 1:nrow(industry_division_df)) {
   # Extract industry division name and data
   industry_division <- industry_division_df$industry_division[i]
-  industry_data <- industry_division_df[i, -1]  # Skip the industry division name
+  industry_data <- industry_division_df[i, -1]
   
   # Get the year columns from both datasets
   colnames_industry <- colnames(industry_data)
-  colnames_agency <- colnames(agency_of_injury_df[, -1])  # Skip the first column
+  colnames_agency <- colnames(agency_of_injury_df[, -1])
 
   # Align the columns by matching year ranges
   common_years <- intersect(colnames_industry, colnames_agency)
@@ -620,20 +618,20 @@ The graph above displays one of top combinations, showing the relationship betwe
 From previous sections, it shows that the `Public Administration and Safety` sector and `Indoor Environment` agency have a strong correlation. We will take in `Outdoor Environment` agency as a comparison and make a ARIMA model prediction.
 
 ```{r}
-# Step 1: Create a combined dataset with selected industries and agencies of injury
+# Create a combined dataset with selected industries and agencies of injury
 selected_prediction_data <- industry_division_df %>%
   filter(industry_division == "Public Administration and Safety") %>%
   rename_with(~c("Injury Source", "2011", "2012", "2013", "2014", "2015", "2016", 
                  "2017", "2018", "2019", "2020", "2021", "2022", "2023"))
 
-# Step 2: Extract the relevant agencies of injury and rename columns in one step
+# Extract the relevant agencies of injury and rename columns in one step
 selected_prediction_data_2 <- agency_of_injury_df %>%
   filter(agency_of_injury %in% c("Indoor Environment", "Outdoor Environment")) %>%
   select(-agency_of_injury_type) %>%  # Drop the unnecessary column
   rename_with(~c("Injury Source", "2011", "2012", "2013", "2014", "2015", "2016", 
                  "2017", "2018", "2019", "2020", "2021", "2022", "2023"))
 
-# Step 3: Combine the datasets into a single data frame
+# Combine the datasets into a single data frame
 combined_prediction_data <- bind_rows(selected_prediction_data, selected_prediction_data_2)
 
 # Display the combined dataset
@@ -687,11 +685,11 @@ ggplot(data = plot_prediction_data, aes(x = Year, y = Claims, color = Injury_Sou
   scale_color_manual(values = c("red","#0c640c", "blue")) # Adjust colors as needed
 ```
 
-The forecasted results above illustrate that injury claims in Indoor Environments and the Public Administration and Safety sector are expected to increase, while claims in Outdoor Environments are forecasted to decrease in the coming years.
+The forecasted results above illustrate that injury claims in **Indoor Environments** and the **Public Administration and Safety** sector are expected to increase, while claims in **Outdoor Environments** are forecasted to decrease in the coming years.
 
-This insight suggests that if a customer works in the Public Administration and Safety sector and operates in Indoor Environments, insurance companies to consider raising the insurance premium to reflect the higher risk.
+This insight suggests that if a customer works in the **Public Administration and Safety** sector and operates in **Indoor Environments**, insurance companies to consider raising the insurance premium to reflect the higher risk.
 
-In contrast, for customers in the same industry but working in Outdoor Environments, the insurance premium can likely be maintained, as the forecast shows a decrease in injury claims over the coming years.
+In contrast, for customers in the same industry but working in **Outdoor Environments,** the insurance premium can likely be maintained, as the forecast shows a decrease in injury claims over the coming years.
 
 ```{r}
 
