@@ -20,7 +20,7 @@ Student ID: 34648100
 
 ### 1.0 Introduction
 
-This project is to anaylse a usable dataset from the Australian Government's Safe Work Australia website. The goal for this analysis is to prove the feasilbility of using the dataset to predict the number of injury claims in the future from different factors and provide a customisable insurance plan model based on different customers' characteristics.
+This project is to anaylse a usable dataset from the Australian Government's WorkSafe Victoria website. The goal for this analysis is to prove the feasilbility of using the dataset to predict the number of injury claims in the future from different factors and provide a customisable insurance plan model based on different customers' characte
 
 ### 2.0 Load Library
 
@@ -86,7 +86,7 @@ industry_division_df <- industry_division_df[-nrow(industry_division_df), ]
 industry_division_df
 ```
 
-We will drop out the `Other Services` row as it is not representing any individual industry and cannot contribute to the analysis. <!-- #endregion -->
+We will drop out the `Other Services` row as it is not representing any individual industry and cannot contribute to the analysis.
 
 ```{r}
 # Drop Other Services row
@@ -192,7 +192,7 @@ average_industry_claims <- average_industry_claims %>%
 average_industry_claims
 ```
 
-```{r, }
+```{r}
 # Plot the industries with the highest average number of injury claims
 ggplot(average_industry_claims, aes(x = reorder(industry_division, Average_Claims), y = Average_Claims, fill = Average_Claims)) +
   geom_bar(stat = "identity") +
@@ -212,9 +212,9 @@ ggplot(average_industry_claims, aes(x = reorder(industry_division, Average_Claim
   )
 ```
 
-From the bar chart, it is evident that industries such as Manufacturing, Health Care and Social Assistance, and Construction have the highest average number of injury claims over the specified period.
+From the bar chart, it is evident that industries such as **Manufacturing, Health Care and Social Assistance**, and **Construction** have the highest average number of injury claims over the specified period.
 
-To refine our focus, we will conduct an Interquartile Range (IQR) analysis on the Average Number of Injury Claims by Industry Division. This statistical technique helps identify a threshold for selecting industries that are worth considering for customized insurance models. If the injury claims number is too low, it is deemed not cost-effective for the insurance company to provide customised solutions due to the lower risk levels in those industries.
+To refine our focus, we will conduct an Interquartile Range (IQR) analysis on the **Average Number of Injury Claims by Industry Division**. This statistical technique helps identify a threshold for selecting industries that are worth considering for customized insurance models. If the injury claims number is too low, it is deemed not cost-effective for the insurance company to provide customised solutions due to the lower risk levels in those industries.
 
 ```{r}
 # Calculate the Interquartile Range (IQR), Q1, and Q3
@@ -222,7 +222,7 @@ industry_claims_Q1 <- quantile(average_industry_claims$Average_Claims, 0.25, na.
 industry_claims_Q3 <- quantile(average_industry_claims$Average_Claims, 0.75, na.rm = TRUE)
 industry_claims_IQR_value <- industry_claims_Q3 - industry_claims_Q1
 
-# Calculate the lower bound
+# Calculate the lower bound & upper bound
 industry_claims_lower_bound <- industry_claims_Q1 - 1.5 * industry_claims_IQR_value
 industry_claims_upper_bound <- industry_claims_Q3 + 1.5 * industry_claims_IQR_value
 
@@ -243,7 +243,7 @@ iqr_summary
 
 ```
 
-From the IQR Summary, it shown that the lower bound having value of -2131 which is an invalid value. Then we are selecting Q1 with a value of 426 which represents the top 75% of industries in terms of injury rates. This approach ensures that only industries with a relatively higher risk profile are considered for customization of insurance plans.
+From the IQR Summary, it shown that the **lower bound** having value of **-2131** which is an **invalid** value. Then we are selecting **Q1** with a value of **426** as threshold which represents the top **75%** of industries in terms of injury rates. This approach ensures that only industries with a relatively higher risk profile are considered for customization of insurance plans.
 
 ```{r}
 # Visualization: Highlight industries above the Threshold
@@ -269,7 +269,7 @@ ggplot(average_industry_claims, aes(x = reorder(industry_division, Average_Claim
   )
 ```
 
-From the graphs it shows that Electricity, **Electricity, Gas, Water, and Waste Services**, **Rental, Hiring and Real Estate Services**, **Financial and Insurance Services**, **Information Media and Telecommunications**, and **Mining** fall below the threshold value (Q1 = 426). Customer from these industry division can consider to be removed from the prediction model due to low injury rate.
+From the graphs it shows that Electricity, **Electricity, Gas, Water, and Waste Services**, **Rental, Hiring and Real Estate Services**, **Financial and Insurance Services**, **Information Media and Telecommunications**, and **Mining** fall below the threshold value (Q1 = 426). Customer from these industry divisions can consider to be removed from the prediction model due to low injury rate.
 
 ### 5.0 Time Series Analysis on Industry Division
 
@@ -336,13 +336,13 @@ for (i in 1:nrow(selected_industries)) {
   industry_ggplot_list[[i]] <- p
 }
 
-# Step 5: Display the plots for all selected bodily locations with an overall title
+# Define Main Title
 main_industry_title <- textGrob(
   "Time Series Analysis on Injury Claims by Industry Division",
   gp = gpar(fontsize = 16, fontface = "bold")
 )
 
-# Use grid.arrange to display the plots with the main title
+# Display the plots with the main title
 grid.arrange(
   arrangeGrob(
     grobs = industry_ggplot_list,
@@ -367,8 +367,8 @@ bodily_trend_results <- data.frame(Bodily_Location = character(), Slope = numeri
 # Loop through each bodily location in the dataset
 for (i in 1:nrow(bodily_location_df)) {
   bodily_name <- bodily_location_df$bodily_location[i]
-  bodily_data <- as.numeric(unlist(bodily_location_df[i, -1]))  # Remove the bodily location name column
-
+  bodily_data <- as.numeric(unlist(bodily_location_df[i, -1]))
+  
   # Create a time series object
   bodily_ts <- ts(bodily_data, start = 2011, frequency = 1)
 
@@ -417,7 +417,7 @@ for (i in 1:nrow(top_increasing_bodily_trends)) {
   bodily_ggplot_list[[i]] <- p
 }
 
-# Display the plots for all selected bodily locations with an overall title
+# Define Main Title
 main_bodily_title <- textGrob(
   "Time Series Analysis on Injury Claims by Bodily Location",
   gp = gpar(fontsize = 16, fontface = "bold")
@@ -537,7 +537,7 @@ ggplot(data = final_plot_data, aes(x = Year)) +
     geom_point(aes(y = Industry_Claims, color = "Industry Claims")) +
     geom_line(aes(y = Agency_Claims, color = "Agency Claims"), size = 1.2) +
     geom_point(aes(y = Agency_Claims, color = "Agency Claims")) +
-    facet_wrap(~ Industry_Division + Agency_of_Injury, scales = "free_y", labeller = custom_labeller) +  # Apply custom labeller
+    facet_wrap(~ Industry_Division + Agency_of_Injury, scales = "free_y", labeller = custom_labeller) +
     labs(
         title = "Claims over the years for Industry Divisions and Agencies of Injury",
         x = "Year",
@@ -578,7 +578,7 @@ industry_r_squared <- calculate_r_squared(subset_plot_data$Year, subset_plot_dat
 # Calculate R-squared values for Agency Claims
 agency_r_squared <- calculate_r_squared(subset_plot_data$Year, subset_plot_data$Agency_Claims)
 
-# Create the ggplot with text wrapping in facet labels and linear regression lines
+# Create the ggplot with linear regression lines
 ggplot(data = subset_plot_data, aes(x = Year)) +
     geom_line(aes(y = Industry_Claims, color = "Public Administration and Safety"), size = 1.2) +
     geom_point(aes(y = Industry_Claims, color = "Public Administration and Safety")) +
@@ -624,10 +624,10 @@ selected_prediction_data <- industry_division_df %>%
   rename_with(~c("Injury Source", "2011", "2012", "2013", "2014", "2015", "2016", 
                  "2017", "2018", "2019", "2020", "2021", "2022", "2023"))
 
-# Extract the relevant agencies of injury and rename columns in one step
+# Extract the relevant agencies of injury and rename columns
 selected_prediction_data_2 <- agency_of_injury_df %>%
   filter(agency_of_injury %in% c("Indoor Environment", "Outdoor Environment")) %>%
-  select(-agency_of_injury_type) %>%  # Drop the unnecessary column
+  select(-agency_of_injury_type) %>%
   rename_with(~c("Injury Source", "2011", "2012", "2013", "2014", "2015", "2016", 
                  "2017", "2018", "2019", "2020", "2021", "2022", "2023"))
 
